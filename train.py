@@ -37,7 +37,7 @@ def train(base_loader, val_loader, model, optimization, start_epoch, stop_epoch,
             if not os.path.isdir(params.checkpoint_dir):
                 os.makedirs(params.checkpoint_dir)
 
-            acc = model.test_loop( val_loader)
+            acc, ci = model.test_loop( val_loader, return_95_ci=True)
             if acc > max_acc : #for baseline and baseline++, we don't use validation in default and we let acc = -1, but we allow options to validate with DB index
                 print("best model! save...")
                 max_acc = acc
@@ -48,7 +48,7 @@ def train(base_loader, val_loader, model, optimization, start_epoch, stop_epoch,
                 outfile = os.path.join(params.checkpoint_dir, '{:d}.tar'.format(epoch))
                 torch.save({'epoch':epoch, 'state':model.state_dict()}, outfile)
 
-            pbar_train.set_description("Epoch {} -> Val Acc {}".format(epoch, str(acc)))
+            pbar_train.set_description('Epoch %d -> Val Acc = %4.2f%% +- %4.2f%%' % (epoch,  acc, ci))
             pbar_train.update(1)
 
     return model
@@ -118,7 +118,7 @@ if __name__=='__main__':
             model           = BaselineTrain( model_dict[params.model], params.num_classes, loss_type = 'dist')
 
     elif params.method in ['protonet','matchingnet','relationnet', 'relationnet_softmax', 'maml', 'maml_approx']:
-        n_query = max(1, int(4* params.test_n_way/params.train_n_way)) #if test_n_way is smaller than train_n_way, reduce n_query to keep batch size small
+        n_query = max(1, int(16* params.test_n_way/params.train_n_way)) #if test_n_way is smaller than train_n_way, reduce n_query to keep batch size small
  
         train_few_shot_params    = dict(n_way = params.train_n_way, n_support = params.n_shot) 
         base_datamgr            = SetDataManager(image_size, n_query = n_query,  **train_few_shot_params)
