@@ -216,7 +216,8 @@ if __name__=='__main__':
             start_epoch = tmp['epoch']+1
             model.load_state_dict(tmp['state'])
     elif params.warmup: #We also support warmup from pretrained baseline feature, but we never used in our paper
-        baseline_checkpoint_dir = '%s/checkpoints/%s/%s_%s' %(configs.save_dir, params.dataset, params.model, 'baseline')
+        baseline_checkpoint_dir = '%s/checkpoints/%s/%s_%s_v%s' % (
+            configs.save_dir, params.dataset, params.model, 'baseline', params.version)
         if params.train_aug:
             baseline_checkpoint_dir += '_aug'
         warmup_resume_file = get_resume_file(baseline_checkpoint_dir)
