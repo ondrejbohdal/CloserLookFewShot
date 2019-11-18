@@ -66,6 +66,7 @@ def train(base_loader, val_loader, model, optimization, start_epoch, stop_epoch,
 
             acc, ci = model.test_loop( val_loader, return_95_ci=True)
             if acc > max_acc : #for baseline and baseline++, we don't use validation in default and we let acc = -1, but we allow options to validate with DB index
+                print()
                 print("best model! save...")
                 max_acc = acc
                 outfile = os.path.join(params.checkpoint_dir, 'best_model.tar')
@@ -84,7 +85,8 @@ def train(base_loader, val_loader, model, optimization, start_epoch, stop_epoch,
                 experiment_update_dict, params.experiment_name)
             start_time = time.time()
 
-            pbar_train.set_description('Epoch %d -> Val Acc = %4.2f%% +- %4.2f%%' % (epoch,  acc, ci))
+            pbar_train.set_description(
+                'Epoch %d -> Val Acc = %4.2f%% +- %4.2f%%, Train Loss = %0.4f' % (epoch,  acc, ci, train_loss))
             pbar_train.update(1)
 
     return model
