@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import json
 import glob
 import argparse
 import backbone
@@ -14,6 +15,22 @@ model_dict = dict(
             ResNet50 = backbone.ResNet50,
             ResNet101 = backbone.ResNet101) 
 
+class Bunch(object):
+  def __init__(self, adict):
+    self.__dict__.update(adict)
+
+
+def extract_args_from_json(json_file_path, args_dict):
+    summary_filename = json_file_path
+    with open(summary_filename) as f:
+        summary_dict = json.load(fp=f)
+
+    for key in summary_dict.keys():
+        args_dict[key] = summary_dict[key]
+
+    return args_dict
+
+
 def parse_args(script):
     parser = argparse.ArgumentParser(description= 'few-shot script %s' %(script))
     parser.add_argument('--dataset'     , default='CUB',        help='CUB/miniImagenet/cross/omniglot/cross_char')
@@ -23,6 +40,9 @@ def parse_args(script):
     parser.add_argument('--test_n_way'  , default=5, type=int,  help='class num to classify for testing (validation) ') #baseline and baseline++ only use this parameter in finetuning
     parser.add_argument('--n_shot'      , default=5, type=int,  help='number of labeled data in each class, same as n_support') #baseline and baseline++ only use this parameter in finetuning
     parser.add_argument('--train_aug'   , action='store_true',  help='perform data augmentation or not during training ') #still required for save_features.py and test.py to find the model path correctly
+    parser.add_argument('--version', type=str, default='0')
+    parser.add_argument('--name_of_args_json_file', type=str, default='None')
+    parser.add_argument('--experiment_name', type=str, default='None')
 
     if script == 'train':
         parser.add_argument('--num_classes' , default=200, type=int, help='total number of classes in softmax, only used in baseline') #make it larger than the maximum label value in base class
@@ -42,7 +62,24 @@ def parse_args(script):
        raise ValueError('Unknown script')
         
 
-    return parser.parse_args()
+    # return parser.parse_args()
+
+    args = parser.parse_args()
+    args_dict = vars(args)
+    if args.name_of_args_json_file is not "None":
+        args_dict = extract_args_from_json(
+            args.name_of_args_json_file, args_dict)
+
+    for key in list(args_dict.keys()):
+        if str(args_dict[key]).lower() == "true":
+            args_dict[key] = True
+        elif str(args_dict[key]).lower() == "false":
+            args_dict[key] = False
+        print(key, args_dict[key], type(args_dict[key]))
+
+    args = Bunch(args_dict)
+
+    return args
 
 
 def get_assigned_file(checkpoint_dir,num):

@@ -22,6 +22,20 @@ from methods.relationnet import RelationNet
 from methods.maml import MAML
 from io_utils import model_dict, parse_args, get_resume_file, get_best_file , get_assigned_file
 
+
+def update_json_experiment_log_dict(experiment_update_dict, experiment_name):
+    json_experiment_log_file_name = os.path.join(
+        'results', experiment_name) + '.json'
+    with open(json_experiment_log_file_name, 'r') as f:
+        summary_dict = json.load(fp=f)
+
+    for key in experiment_update_dict:
+        summary_dict[key].append(experiment_update_dict[key])
+
+    with open(json_experiment_log_file_name, 'w') as f:
+        json.dump(summary_dict, fp=f)
+
+
 def feature_evaluation(cl_data_file, model, n_way = 5, n_support = 5, n_query = 15, adaptation = False):
     class_list = cl_data_file.keys()
 
@@ -91,7 +105,7 @@ if __name__ == '__main__':
 
     model = model.cuda()
 
-    checkpoint_dir = '%s/checkpoints/%s/%s_%s' %(configs.save_dir, params.dataset, params.model, params.method)
+    checkpoint_dir = '%s/checkpoints/%s/%s_%s_v%s' %(configs.save_dir, params.dataset, params.model, params.method, params.version)
     if params.train_aug:
         checkpoint_dir += '_aug'
     if not params.method in ['baseline', 'baseline++'] :
@@ -155,6 +169,12 @@ if __name__ == '__main__':
         acc_mean = np.mean(acc_all)
         acc_std  = np.std(acc_all)
         print('%d Test Acc = %4.2f%% +- %4.2f%%' %(iter_num, acc_mean, 1.96* acc_std/np.sqrt(iter_num)))
+
+    experiment_update_dict = {
+        "test_accuracy": acc_mean, "test_accuracy_95_ci": 1.96 * acc_std/np.sqrt(iter_num)}
+    update_json_experiment_log_dict(
+        experiment_update_dict, params.experiment_name)
+
     with open('./record/results.txt' , 'a') as f:
         timestamp = time.strftime("%Y%m%d-%H%M%S", time.localtime()) 
         aug_str = '-aug' if params.train_aug else ''

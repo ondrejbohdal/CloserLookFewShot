@@ -51,7 +51,7 @@ class MetaTemplate(nn.Module):
         top1_correct = np.sum(topk_ind[:,0] == y_query)
         return float(top1_correct), len(y_query)
 
-    def train_loop(self, epoch, train_loader, optimizer ):
+    def train_loop(self, epoch, train_loader, optimizer, return_loss=False):
         print_freq = 10
 
         avg_loss=0
@@ -68,7 +68,10 @@ class MetaTemplate(nn.Module):
             # if i % print_freq==0:
             #     #print(optimizer.state_dict()['param_groups'][0]['lr'])
             #     print('Epoch {:d} | Batch {:d}/{:d} | Loss {:f}'.format(epoch, i, len(train_loader), avg_loss/float(i+1)))
-        print('Epoch {:d} -> Train Loss {:f}'.format(epoch, avg_loss/float(i+1)))
+        print('Epoch {:d} -> Train Loss = {:f}'.format(epoch, avg_loss/float(i+1)))
+        
+        if return_loss:
+            return avg_loss/float(i+1)
 
     def test_loop(self, test_loader, record=None, return_95_ci=False):
         correct =0

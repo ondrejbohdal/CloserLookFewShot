@@ -1,3 +1,4 @@
+import json
 import numpy as np
 import torch
 import torch.nn as nn
@@ -20,6 +21,30 @@ from methods.relationnet import RelationNet
 from methods.maml import MAML
 from io_utils import model_dict, parse_args, get_resume_file  
 
+def create_json_experiment_log(experiment_name):
+    json_experiment_log_file_name = os.path.join(
+        'results', experiment_name) + '.json'
+    experiment_summary_dict = {"train_loss": [],
+                               "val_accuracy": [], "val_accuracy_95_ci": [],
+                               "test_accuracy": [], "test_accuracy_95_ci": [],
+                               "epoch": [], "time": []}
+    with open(json_experiment_log_file_name, 'w') as f:
+        json.dump(experiment_summary_dict, fp=f)
+
+
+def update_json_experiment_log_dict(experiment_update_dict, experiment_name):
+    json_experiment_log_file_name = os.path.join(
+        'results', experiment_name) + '.json'
+    with open(json_experiment_log_file_name, 'r') as f:
+        summary_dict = json.load(fp=f)
+
+    for key in experiment_update_dict:
+        summary_dict[key].append(experiment_update_dict[key])
+
+    with open(json_experiment_log_file_name, 'w') as f:
+        json.dump(summary_dict, fp=f)
+
+
 def train(base_loader, val_loader, model, optimization, start_epoch, stop_epoch, params):    
     if optimization == 'Adam':
         optimizer = torch.optim.Adam(model.parameters())
@@ -28,10 +53,12 @@ def train(base_loader, val_loader, model, optimization, start_epoch, stop_epoch,
 
     with tqdm.tqdm(initial=0, total=stop_epoch-start_epoch) as pbar_train:
         max_acc = 0       
+        create_json_experiment_log(params.experiment_name)
+        start_time = time.time()
 
         for epoch in range(start_epoch,stop_epoch):
             model.train()
-            model.train_loop(epoch, base_loader,  optimizer ) #model are called by reference, no need to return 
+            train_loss = model.train_loop(epoch, base_loader,  optimizer, return_loss=True) #model are called by reference, no need to return 
             model.eval()
 
             if not os.path.isdir(params.checkpoint_dir):
@@ -48,6 +75,15 @@ def train(base_loader, val_loader, model, optimization, start_epoch, stop_epoch,
                 outfile = os.path.join(params.checkpoint_dir, '{:d}.tar'.format(epoch))
                 torch.save({'epoch':epoch, 'state':model.state_dict()}, outfile)
 
+            # update stats
+            end_time = time.time()
+            experiment_update_dict = {"train_loss": train_loss,
+                                      "val_accuracy": acc, "val_accuracy_95_ci": ci,
+                                      "epoch": epoch, "time": end_time-start_time}
+            update_json_experiment_log_dict(
+                experiment_update_dict, params.experiment_name)
+            start_time = time.time()
+
             pbar_train.set_description('Epoch %d -> Val Acc = %4.2f%% +- %4.2f%%' % (epoch,  acc, ci))
             pbar_train.update(1)
 
@@ -56,7 +92,6 @@ def train(base_loader, val_loader, model, optimization, start_epoch, stop_epoch,
 if __name__=='__main__':
     np.random.seed(10)
     params = parse_args('train')
-
 
     if params.dataset == 'cross':
         base_file = configs.data_dir['miniImagenet'] + 'all.json' 
@@ -160,7 +195,7 @@ if __name__=='__main__':
 
     model = model.cuda()
 
-    params.checkpoint_dir = '%s/checkpoints/%s/%s_%s' %(configs.save_dir, params.dataset, params.model, params.method)
+    params.checkpoint_dir = '%s/checkpoints/%s/%s_%s_v%s' %(configs.save_dir, params.dataset, params.model, params.method, params.version)
     if params.train_aug:
         params.checkpoint_dir += '_aug'
     if not params.method  in ['baseline', 'baseline++']: 
