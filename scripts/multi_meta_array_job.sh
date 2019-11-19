@@ -45,7 +45,7 @@ echo ${CONFIGS[SLURM_ARRAY_TASK_ID-1]}
 
 echo "---------------------Train---------------------"
 # python train.py --dataset miniImagenet --model Conv4 --method relationnet --train_aug
-python train.py --name_of_args_json_file configs/${CONFIGS[SLURM_ARRAY_TASK_ID-1]}.json
+# python train.py --name_of_args_json_file configs/${CONFIGS[SLURM_ARRAY_TASK_ID-1]}.json
 
 echo "---------------------Save features---------------------"
 # python save_features.py --dataset miniImagenet --model Conv4 --method relationnet --train_aug
