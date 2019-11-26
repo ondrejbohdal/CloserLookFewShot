@@ -37,7 +37,7 @@ pip-delete-this-directory.txt
 
 #codebase-specific
 *.pkl
-filelists/*
+filelists/miniImageNet/images/*
 *.tar
 
 # Unit test / coverage reports
