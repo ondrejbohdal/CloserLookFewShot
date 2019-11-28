@@ -1,8 +1,8 @@
 {
     "dataset": "miniImagenet",
     "model": "Conv4",
-    "method": "relationnet",
+    "method": "relationnet_softmax",
     "train_aug": "true",
     "version": "0",
-    "experiment_name": "Conv4_relationnet_v0_aug_5way_5shot"
+    "experiment_name": "Conv4_relationnet_softmax_v0_aug_5way_5shot"
 }
